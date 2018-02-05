@@ -1,4 +1,4 @@
-using DiffLinearAlgebra, Base.Test
+using DiffLinearAlgebra, Compat.Test
 
 import FDM: assert_approx_equal, central_fdm
 import DiffLinearAlgebra: AA, AM, AVM, AS, ASVM, Arg1, Arg2

@@ -80,7 +80,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemv),
 ∇(::typeof(gemv), ::Arg2, _, y::SV{T}, ȳ::SV, tA::Char, α::T, A::SM{T}, x::SV{T}) where T<:BF =
     dot(ȳ, y) / α
 ∇(::typeof(gemv), ::Arg3, _, y::SV{T}, ȳ::SV, tA::Char, α::T, A::SM{T}, x::SV{T}) where T<:BF =
-    uppercase(tA) == 'N' ? α * ȳ * x.' : α * x * ȳ.'
+    uppercase(tA) == 'N' ? α * ȳ * x' : α * x * ȳ'
 ∇(Ā::SM{T}, ::typeof(gemv), ::Arg3, _, y::SV{T}, ȳ::SV{T}, tA::Char, α::T, A::SM{T}, x::SV{T}) where T<:BF =
     uppercase(tA) == 'N' ? ger!(α, ȳ, x, Ā) : ger!(α, x, ȳ, Ā)
 ∇(::typeof(gemv), ::Arg4, _, y::SV{T}, ȳ::SV{T}, tA::Char, α::T, A::SM{T}, x::SV{T}) where T<:BF =
@@ -146,7 +146,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.trmv),
     A::SM{T},
     b::SV{T},
 ) where T<:BF =
-    (uppercase(ul) == 'L' ? tril! : triu!)(uppercase(ta) == 'N' ? ȳ * b.' : b * ȳ.')
+    (uppercase(ul) == 'L' ? tril! : triu!)(uppercase(ta) == 'N' ? ȳ * b' : b * ȳ')
 ∇(::typeof(trmv), ::Arg5, p, y::SV{T}, ȳ::SV{T},
     ul::Char, ta::Char, dA::Char,
     A::SM{T},
@@ -296,8 +296,8 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemm),
 #     A::StridedVecOrMat{<:∇Scalar},
 # )
 #     triȲ = uppercase(uplo) == 'L' ? tril(Ȳ) : triu(Ȳ)
-#     out = gemm('N', trans, α, triȲ .+ triȲ.', A)
-#     return uppercase(trans) == 'N' ? out : out.'
+#     out = gemm('N', trans, α, triȲ .+ triȲ', A)
+#     return uppercase(trans) == 'N' ? out : out'
 # end
 # function ∇(Ā::StridedVecOrMat{T}, ::typeof(syrk), ::Type{Arg{4}}, p, Y, Ȳ,
 #     uplo::Char,
@@ -306,8 +306,8 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemm),
 #     A::StridedVecOrMat{T},
 # ) where T<:∇Scalar
 #     triȲ = uppercase(uplo) == 'L' ? tril(Ȳ) : triu(Ȳ)
-#     out = gemm('N', trans, α, triȲ .+ triȲ.', A)
-#     return broadcast!((ā, δā)->ā+δā, Ā, Ā, uppercase(trans) == 'N' ? out : out.')
+#     out = gemm('N', trans, α, triȲ .+ triȲ', A)
+#     return broadcast!((ā, δā)->ā+δā, Ā, Ā, uppercase(trans) == 'N' ? out : out')
 # end
 
 # # `syrk` sensitivity implementations for `α=1`.
@@ -346,7 +346,7 @@ function ∇(::typeof(symm), ::Arg4, p, Y::SM{T}, Ȳ::SM{T},
     A::SM{T},
     B::SM{T},
 ) where T<:BF
-    tmp = uppercase(side) == 'L' ? Ȳ * B.' : B.'Ȳ
+    tmp = uppercase(side) == 'L' ? Ȳ * B' : B'Ȳ
     g! = uppercase(ul) == 'L' ? tril! : triu!
     return α * g!(tmp + tmp' - Diagonal(tmp))
 end
@@ -357,7 +357,7 @@ function ∇(Ā::SM{T}, ::typeof(symm), ::Arg4, p, Y::SM{T}, Ȳ::SM{T},
     A::SM{T},
     B::SM{T},
 ) where T<:BF
-    tmp = uppercase(side) == 'L' ? Ȳ * B.' : B.'Ȳ
+    tmp = uppercase(side) == 'L' ? Ȳ * B' : B'Ȳ
     g! = uppercase(ul) == 'L' ? tril! : triu!
     return broadcast!((ā, δā)->ā + δā, Ā, Ā, α * g!(tmp + tmp' - Diagonal(tmp)))
 end
@@ -374,7 +374,7 @@ end
     α::T,
     A::SM{T},
     B::SM{T},
-) where T<:BF = symm!(side, ul, α, A, Ȳ, 1.0, B̄)
+) where T<:BF = symm!(side, ul, α, A, Ȳ, one(T), B̄)
 
 # `symm` sensitivity implementations for `α=1`.
 push!(ops, DiffOp(:(Base.LinAlg.BLAS.symm),
@@ -466,11 +466,11 @@ function ∇(::typeof(trsm), ::Arg6, p, Y::SM{T}, Ȳ::SM{T},
 ) where T<:BF
     Ā_full = uppercase(side) == 'L' ?
         uppercase(ta) == 'N' ?
-            trsm('L', ul, 'T', dA, -1.0, A, Ȳ * Y.') :
-            trsm('R', ul, 'T', dA, -1.0, A, Y * Ȳ.') :
+            trsm('L', ul, 'T', dA, -one(T), A, Ȳ * Y') :
+            trsm('R', ul, 'T', dA, -one(T), A, Y * Ȳ') :
         uppercase(ta) == 'N' ?
-            trsm('R', ul, 'T', dA, -1.0, A, Y.'Ȳ) :
-            trsm('L', ul, 'T', dA, -1.0, A, Ȳ.'Y)
+            trsm('R', ul, 'T', dA, -one(T), A, Y'Ȳ) :
+            trsm('L', ul, 'T', dA, -one(T), A, Ȳ'Y)
     return (uppercase(ul) == 'L' ? tril! : triu!)(Ā_full)
 end
 ∇(::typeof(trsm), ::Type{Val{7}}, p, Y::SM{T}, Ȳ::SM{T},

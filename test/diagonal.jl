@@ -59,7 +59,7 @@
         @test check_errs(N, unary_ȲD_inplace(det, D0)..., sc, dPP, dPP)
 
         # Log Determinant.
-        @test check_errs(N, unary_ȲD(det)..., sc, dPP, dPP)
-        @test check_errs(N, unary_ȲD_inplace(det, D0)..., sc, dPP, dPP)
+        @test check_errs(N, unary_ȲD(logdet)..., sc, dPP, dPP)
+        @test check_errs(N, unary_ȲD_inplace(logdet, D0)..., sc, dPP, dPP)
     end
 end

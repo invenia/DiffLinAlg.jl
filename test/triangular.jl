@@ -5,7 +5,7 @@
 
             sc = ()->randn(rng)
             mPP = ()->abs.(randn(rng, P, P))
-            dPP = ()->abs.(randn(rng, P, P))
+            dPP = ()->Diagonal(abs.(randn(rng, P)))
             tPP = ()->f(abs.(randn(rng, P, P)))
             m0 = fill!(similar(mPP()), zero(eltype(mPP())))
 

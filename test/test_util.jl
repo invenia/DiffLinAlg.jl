@@ -3,7 +3,7 @@
 """
 check_errs(f, ∇f, Ȳ::AS, X::AS, V::AS, ε_abs::Real=1e-7, ε_rel::Real=1e-5)::Bool =
     assert_approx_equal(
-        central_fdm(2, 1)(ϵ->sum(Ȳ .* f(X .+ ϵ .* V))),
+        central_fdm(2, 1)(ϵ->sum(Ȳ .* f(X + ϵ * V))),
         sum(∇f(f(X), Ȳ, X) .* V),
         ε_abs, ε_rel)
 

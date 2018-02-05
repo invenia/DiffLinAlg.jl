@@ -20,10 +20,10 @@ Construct an expression of the form `:(import Package.Subpackage.Foo)` from an e
 the form `:(Package.Subpackage.Foo)`.
 """
 function importable(ex::Expr)
-       ex.head === :. || error("Expression is not valid as an import: $ex")
-       result = importable(ex.args[1])
-       push!(result, ex.args[2].value)
-       result
+    ex.head === :. || error("Expression is not valid as an import: $ex")
+    result = importable(ex.args[1])
+    push!(result, ex.args[2].value)
+    result
 end
 importable(sym::Symbol) = Any[sym]
 
@@ -32,4 +32,7 @@ importable(sym::Symbol) = Any[sym]
 
 Generate an expression to import `dop.f` from the appropriate package.
 """
-import_expr(dop::DiffOp) = Expr(:import, importable(dop.f)...)
+import_expr(dop::DiffOp) =
+    VERSION <= VersionNumber("0.6.2") ?
+        Expr(:import, importable(dop.f)...) :
+        Expr(:import, Expr(Symbol("."), importable(dop.f)...))
