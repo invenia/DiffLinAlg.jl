@@ -7,7 +7,7 @@
             mPP = ()->abs.(randn(rng, P, P))
             dPP = ()->Diagonal(abs.(randn(rng, P)))
             tPP = ()->f(abs.(randn(rng, P, P)))
-            m0 = fill!(similar(mPP()), zero(eltype(mPP())))
+            m0 = randn!(rng, similar(mPP()))
 
             # Construction.
             @test check_errs(N, unary_ȲD(f)..., tPP, mPP, mPP)
@@ -15,13 +15,13 @@
 
             # Determinant.
             @test check_errs(N, unary_ȲD(det)..., sc, tPP, tPP)
-            @test check_errs(N, unary_ȲD_inplace(det, zero(tPP()))..., sc, tPP, tPP)
-            @test check_errs(N, unary_ȲD_inplace(det, zero(dPP()))..., sc, tPP, tPP)
+            @test check_errs(N, unary_ȲD_inplace(det, tPP())..., sc, tPP, tPP)
+            @test check_errs(N, unary_ȲD_inplace(det, dPP())..., sc, tPP, tPP)
 
             # Log Determinant.
             @test check_errs(N, unary_ȲD(logdet)..., sc, tPP, tPP)
-            @test check_errs(N, unary_ȲD_inplace(logdet, zero(tPP()))..., sc, tPP, tPP)
-            @test check_errs(N, unary_ȲD_inplace(logdet, zero(dPP()))..., sc, tPP, tPP)
+            @test check_errs(N, unary_ȲD_inplace(logdet, tPP())..., sc, tPP, tPP)
+            @test check_errs(N, unary_ȲD_inplace(logdet, dPP())..., sc, tPP, tPP)
         end
     end
 end

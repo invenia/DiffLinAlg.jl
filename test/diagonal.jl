@@ -7,14 +7,14 @@
         vP, mPP, vPk = ()->randn(rng, P), ()->randn(rng, P, P), ()->randn(rng, P - k)
 
         # Test on-central-diagonal `diag`.
-        X0 = fill!(similar(mPP()), zero(eltype(mPP())))
+        X0 = randn!(rng, similar(mPP()))
         @test check_errs(N, unary_ȲD(diag)..., vP, mPP, mPP)
         @test check_errs(N, unary_ȲD_inplace(diag, X0)..., vP, mPP, mPP)
 
         # Test off-central-diagonal `diag`.
         _diag = X->diag(X, k)
         _∇diag = (y, ȳ, X)->∇(diag, Val{1}, (), y, ȳ, X, k)
-        _∇diag_inp = (y, ȳ, X)->∇(fill!(similar(X), 0), diag, Val{1}, (), y, ȳ, X, k)
+        _∇diag_inp = (y, ȳ, X)->∇(copy(X0), diag, Val{1}, (), y, ȳ, X, k) - X0
         @test check_errs(N, _diag, _∇diag, vPk, mPP, mPP)
         @test check_errs(N, _diag, _∇diag_inp, vPk, mPP, mPP)
     end
@@ -27,14 +27,14 @@
         mPP, mPPk = ()->randn(rng, P, P), ()->randn(rng, P + k, P + k)
 
         # Test on-central-diagonal `diagm`.
-        x0 = fill!(similar(vP()), zero(eltype(vP())))
+        x0 = randn!(rng, similar(vP()))
         @test check_errs(N, unary_ȲD(diagm)..., mPP, vP, vP)
         @test check_errs(N, unary_ȲD_inplace(diagm, x0)..., mPP, vP, vP)
 
         # Test off-central-diagonal `diagm`.
         _diagm = x->diagm(x, k)
         _∇diagm = (Y, Ȳ, x)->∇(diagm, Val{1}, (), Y, Ȳ, x, k)
-        _∇diagm_inp = (Y, Ȳ, x)->∇(fill!(similar(x), 0), diagm, Val{1}, (), Y, Ȳ, x, k)
+        _∇diagm_inp = (Y, Ȳ, x)->∇(copy(x0), diagm, Val{1}, (), Y, Ȳ, x, k) - x0
         @test check_errs(N, _diagm, _∇diagm, mPPk, vP, vP)
         @test check_errs(N, _diagm, _∇diagm_inp, mPPk, vP, vP)
 
@@ -46,13 +46,13 @@
     let P = 10, rng = MersenneTwister(123456), N = 10
         sc, vP = ()->abs(randn(rng)), ()->abs.(randn(rng, P))
         mPP, dPP = ()->abs.(randn(rng, P, P)), ()->Diagonal(abs.(randn(rng, P)))
-        D0 = Diagonal(fill!(similar(vP()), 0))
+        D0 = Diagonal(randn!(rng, similar(vP())))
 
         # Construction.
         @test check_errs(N, unary_ȲD(Diagonal)..., dPP, vP, vP)
-        @test check_errs(N, unary_ȲD_inplace(Diagonal, zeros(P))..., dPP, vP, vP)
+        @test check_errs(N, unary_ȲD_inplace(Diagonal, vP())..., dPP, vP, vP)
         @test check_errs(N, unary_ȲD(Diagonal)..., dPP, mPP, mPP)
-        @test check_errs(N, unary_ȲD_inplace(Diagonal, zeros(P, P))..., dPP, mPP, mPP)
+        @test check_errs(N, unary_ȲD_inplace(Diagonal, mPP())..., dPP, mPP, mPP)
 
         # Determinant.
         @test check_errs(N, unary_ȲD(det)..., sc, dPP, dPP)

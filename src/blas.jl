@@ -11,7 +11,7 @@ push!(ops, DiffOp(:(Base.dot),
 ∇(::typeof(dot), ::Arg1, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = z̄ .* y
 ∇(::typeof(dot), ::Arg2, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = z̄ .* x
 ∇(x̄, ::typeof(dot), ::Arg1, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = (x̄ .= x̄ .+ z̄ .* y)
-∇(ȳ, ::typeof(dot), ::Arg2, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = (ȳ .+ ȳ .+ z̄ .* x)
+∇(ȳ, ::typeof(dot), ::Arg2, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = (ȳ .= ȳ .+ z̄ .* x)
 
 # Arbitrary-stride `dot`.
 push!(ops, DiffOp(:(Base.LinAlg.BLAS.dot),
