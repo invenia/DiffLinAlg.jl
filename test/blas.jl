@@ -12,8 +12,8 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
     # Unit-stride dot.
     @test check_errs(N, binary_ȲD(dot, 1, vP)..., sc, vP, vP)
     @test check_errs(N, binary_ȲD(dot, 2, vP)..., sc, vP, vP)
-    @test check_errs(N, binary_ȲD_inplace(dot, 1, vP, zeros(P))..., sc, vP, vP)
-    @test check_errs(N, binary_ȲD_inplace(dot, 2, vP, zeros(P))..., sc, vP, vP)
+    @test check_errs(N, binary_ȲD_inplace(dot, 1, vP, vP())..., sc, vP, vP)
+    @test check_errs(N, binary_ȲD_inplace(dot, 2, vP, vP())..., sc, vP, vP)
 
     # Strided dot.
     _x, _y = vP(), vQ()
@@ -24,30 +24,31 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
     @test check_errs(N, _dot4, _∇dot4, sc, vQ, vQ)
 
     # In-place strided dot.
-    _∇dot2 = (z, z̄, x)->∇(zeros(P), dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1)
-    _∇dot4 = (z, z̄, y)->∇(zeros(Q), dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1)
+    _δx, _δy = vP(), vQ()
+    _∇dot2 = (z, z̄, x)->∇(copy(_δx), dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1) - _δx
+    _∇dot4 = (z, z̄, y)->∇(copy(_δy), dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1) - _δy
     @test check_errs(N, _dot2, _∇dot2, sc, vP, vP)
     @test check_errs(N, _dot4, _∇dot4, sc, vQ, vQ)
 
     # Unit-stride nrm2.
     @test check_errs(N, unary_ȲD(nrm2)..., sc, vP, vP)
-    @test check_errs(N, unary_ȲD_inplace(nrm2, zeros(P))..., sc, vP, vP)
+    @test check_errs(N, unary_ȲD_inplace(nrm2, vP())..., sc, vP, vP)
 
     # Arbitrary-stride nrm2.
     _nrm2 = x->nrm2(5, x, 2)
     _∇nrm2 = (y, ȳ, x)->∇(nrm2, Val{2}, (), y, ȳ, 5, x, 2)
-    _∇nrm2_in_place = (y, ȳ, x)->∇(zeros(P), nrm2, Val{2}, (), y, ȳ, 5, x, 2)
+    _∇nrm2_in_place = (y, ȳ, x)->∇(copy(_δx), nrm2, Val{2}, (), y, ȳ, 5, x, 2) - _δx
     @test check_errs(N, _nrm2, _∇nrm2, sc, vP, vP)
     @test check_errs(N, _nrm2, _∇nrm2_in_place, sc, vP, vP)
 
     # Unit-stride `asum`.
     @test check_errs(N, unary_ȲD(asum)..., sc, vP, vP)
-    @test check_errs(N, unary_ȲD_inplace(asum, zeros(P))..., sc, vP, vP)
+    @test check_errs(N, unary_ȲD_inplace(asum, vP())..., sc, vP, vP)
 
     # Arbitrary-stride `asum`.
     _asum = x->asum(5, x, 2)
     _∇asum = (y, ȳ, x)->∇(asum, Val{2}, (), y, ȳ, 5, x, 2)
-    _∇asum_in_place = (y, ȳ, x)->∇(zeros(P), asum, Val{2}, (), y, ȳ, 5, x, 2)
+    _∇asum_in_place = (y, ȳ, x)->∇(copy(_δx), asum, Val{2}, (), y, ȳ, 5, x, 2) - _δx
     @test check_errs(N, _asum, _∇asum, sc, vP, vP)
     @test check_errs(N, _asum, _∇asum_in_place, sc, vP, vP)
 end
@@ -66,6 +67,7 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         _α, _x = sc(), vQ()
         _A = tA == 'N' ? mPQ() : mQP()
         A = tA == 'N' ? mPQ : mQP
+        _δA, _δx = randn!(rng, similar(_A)), randn!(rng, similar(_x))
 
         # α != 1 tests.
         _gemv1 = α->gemv(tA, α, _A, _x)
@@ -73,9 +75,9 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         _gemv3 = x->gemv(tA, _α, _A, x)
         _∇gemv1 = (y, ȳ, α)->∇(gemv, Val{2}, (), y, ȳ, tA, α, _A, _x)
         _∇gemv2 = (y, ȳ, A)->∇(gemv, Val{3}, (), y, ȳ, tA, _α, A, _x)
-        _∇gemv2_inp = (y, ȳ, A)->∇(fill!(similar(A), 0), gemv, Val{3}, (), y, ȳ, tA, _α, A, _x)
+        _∇gemv2_inp = (y, ȳ, A)->∇(copy(_δA), gemv, Val{3}, (), y, ȳ, tA, _α, A, _x) - _δA
         _∇gemv3 = (y, ȳ, x)->∇(gemv, Val{4}, (), y, ȳ, tA, _α, _A, x)
-        _∇gemv3_inp = (y, ȳ, x)->∇(zeros(Q), gemv, Val{4}, (), y, ȳ, tA, _α, _A, x)
+        _∇gemv3_inp = (y, ȳ, x)->∇(copy(_δx), gemv, Val{4}, (), y, ȳ, tA, _α, _A, x) - _δx
 
         @test check_errs(N, _gemv1, _∇gemv1, vP, sc, sc)
         @test check_errs(N, _gemv2, _∇gemv2, vP, A, A)
@@ -86,9 +88,9 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         # α = 1 tests.
         _gemv1, _gemv2 = A->gemv(tA, A, _x), x->gemv(tA, _A, x)
         _∇gemv1 = (y, ȳ, A)->∇(gemv, Val{2}, (), y, ȳ, tA, A, _x)
-        _∇gemv1_inp = (y, ȳ, A)->∇(fill!(similar(A), 0), gemv, Val{2}, (), y, ȳ, tA, A, _x)
+        _∇gemv1_inp = (y, ȳ, A)->∇(copy(_δA), gemv, Val{2}, (), y, ȳ, tA, A, _x) - _δA
         _∇gemv2 = (y, ȳ, x)->∇(gemv, Val{3}, (), y, ȳ, tA, _A, x)
-        _∇gemv2_inp = (y, ȳ, x)->∇(zeros(Q), gemv, Val{3}, (), y, ȳ, tA, _A, x)
+        _∇gemv2_inp = (y, ȳ, x)->∇(copy(_δx), gemv, Val{3}, (), y, ȳ, tA, _A, x) - _δx
 
         @test check_errs(N, _gemv1, _∇gemv1, vP, A, A)
         @test check_errs(N, _gemv1, _∇gemv1_inp, vP, A, A)
@@ -100,6 +102,7 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
     for ul in ['L', 'U']
         α_gen, A_gen, x_gen = sc, mPP, vP
         _α, _A, _x = α_gen(), A_gen(), x_gen()
+        _δA, _δx = randn!(rng, similar(_A)), randn!(rng, similar(_x))
 
         # α != 1 tests.
         _symv_α = α->symv(ul, α, _A, _x)
@@ -107,9 +110,9 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         _symv_x = x->symv(ul, _α, _A, x)
         _∇symv_α = (y, ȳ, α)->∇(symv, Val{2}, (), y, ȳ, ul, α, _A, _x)
         _∇symv_A = (y, ȳ, A)->∇(symv, Val{3}, (), y, ȳ, ul, _α, A, _x)
-        _∇symv_A_inp = (y, ȳ, A)->∇(fill!(similar(A), 0), symv, Val{3}, (), y, ȳ, ul, _α, A, _x)
+        _∇symv_A_inp = (y, ȳ, A)->∇(copy(_δA), symv, Val{3}, (), y, ȳ, ul, _α, A, _x) - _δA
         _∇symv_x = (y, ȳ, x)->∇(symv, Val{4}, (), y, ȳ, ul, _α, _A, x)
-        _∇symv_x_inp = (y, ȳ, x)->∇(fill!(similar(x), 0), symv, Val{4}, (), y, ȳ, ul, _α, _A, x)
+        _∇symv_x_inp = (y, ȳ, x)->∇(copy(_δx), symv, Val{4}, (), y, ȳ, ul, _α, _A, x) - _δx
 
         @test check_errs(N, _symv_α, _∇symv_α, vP, sc, sc)
         @test check_errs(N, _symv_A, _∇symv_A, vP, A_gen, A_gen)
@@ -121,9 +124,9 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         _symv_A = A->symv(ul, A, _x)
         _symv_x = x->symv(ul, _A, x)
         _∇symv_A = (y, ȳ, A)->∇(symv, Val{2}, (), y, ȳ, ul, A, _x)
-        _∇symv_A_inp = (y, ȳ, A)->∇(fill!(similar(A), 0), symv, Val{2}, (), y, ȳ, ul, A, _x)
+        _∇symv_A_inp = (y, ȳ, A)->∇(copy(_δA), symv, Val{2}, (), y, ȳ, ul, A, _x) - _δA
         _∇symv_x = (y, ȳ, x)->∇(symv, Val{3}, (), y, ȳ, ul, _A, x)
-        _∇symv_x_inp = (y, ȳ, x)->∇(fill!(similar(x), 0), symv, Val{3}, (), y, ȳ, ul, _A, x)
+        _∇symv_x_inp = (y, ȳ, x)->∇(copy(_δx), symv, Val{3}, (), y, ȳ, ul, _A, x) - _δx
 
         @test check_errs(N, _symv_A, _∇symv_A, vP, A_gen, A_gen)
         @test check_errs(N, _symv_A, _∇symv_A_inp, vP, A_gen, A_gen)
@@ -147,7 +150,7 @@ end
 
 
 ################################## Level 3 ##################################
-let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
+let P = 5, Q = 3, rng = MersenneTwister(123456), N = 10
 
     # Utility random generators.
     sc, mPP, mQQ = ()->randn(rng), ()->randn(rng, P, P), ()->randn(rng, Q, Q)
@@ -165,14 +168,15 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
 
         # α != 1 tests.
         _α, _A, _B = sc(), A_gen(), B_gen()
+        _δA, _δB = randn!(rng, similar(_A)), randn!(rng, similar(_B))
         _gemm_α = α->gemm(tA, tB, α, _A, _B)
         _gemm_A = A->gemm(tA, tB, _α, A, _B)
         _gemm_B = B->gemm(tA, tB, _α, _A, B)
         _∇gemm_α = (Y, Ȳ, α)->∇(gemm, Val{3}, (), Y, Ȳ, tA, tB, α, _A, _B)
         _∇gemm_A = (Y, Ȳ, A)->∇(gemm, Val{4}, (), Y, Ȳ, tA, tB, _α, A, _B)
         _∇gemm_B = (Y, Ȳ, B)->∇(gemm, Val{5}, (), Y, Ȳ, tA, tB, _α, _A, B)
-        _∇gemm_A_inp = (Y, Ȳ, A)->∇(fill!(similar(A), 0), gemm, Val{4}, (), Y, Ȳ, tA, tB, _α, A, _B)
-        _∇gemm_B_inp = (Y, Ȳ, B)->∇(fill!(similar(B), 0), gemm, Val{5}, (), Y, Ȳ, tA, tB, _α, _A, B)
+        _∇gemm_A_inp = (Y, Ȳ, A)->∇(copy(_δA), gemm, Val{4}, (), Y, Ȳ, tA, tB, _α, A, _B) - _δA
+        _∇gemm_B_inp = (Y, Ȳ, B)->∇(copy(_δB), gemm, Val{5}, (), Y, Ȳ, tA, tB, _α, _A, B) - _δB
 
         @test check_errs(N, _gemm_α, _∇gemm_α, C_gen, sc, sc)
         @test check_errs(N, _gemm_A, _∇gemm_A, C_gen, A_gen, A_gen)
@@ -186,8 +190,8 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         _gemm_B = B->gemm(tA, tB, _A, B)
         _∇gemm_A = (Y, Ȳ, A)->∇(gemm, Val{3}, (), Y, Ȳ, tA, tB, A, _B)
         _∇gemm_B = (Y, Ȳ, B)->∇(gemm, Val{4}, (), Y, Ȳ, tA, tB, _A, B)
-        _∇gemm_A_inp = (Y, Ȳ, A)->∇(fill!(similar(A), 0), gemm, Val{3}, (), Y, Ȳ, tA, tB, A, _B)
-        _∇gemm_B_inp = (Y, Ȳ, B)->∇(fill!(similar(B), 0), gemm, Val{4}, (), Y, Ȳ, tA, tB, _A, B)
+        _∇gemm_A_inp = (Y, Ȳ, A)->∇(copy(_δA), gemm, Val{3}, (), Y, Ȳ, tA, tB, A, _B) - _δA
+        _∇gemm_B_inp = (Y, Ȳ, B)->∇(copy(_δB), gemm, Val{4}, (), Y, Ȳ, tA, tB, _A, B) - _δB
 
         @test check_errs(N, _gemm_A, _∇gemm_A, C_gen, A_gen, A_gen)
         @test check_errs(N, _gemm_A, _∇gemm_A_inp, C_gen, A_gen, A_gen)
@@ -200,6 +204,7 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
 
         # Fixed qtts.
         _α, _A, _B = sc(), mPP(), side == 'L' ? mPQ() : mQP()
+        _δA, _δB = randn!(rng, similar(_A)), randn!(rng, similar(_B))
 
         # α != 1 tests.
         _symm_α = α->symm(side, ul, α, _A, _B)
@@ -208,8 +213,8 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         _∇symm_α = (Y, Ȳ, α)->∇(symm, Val{3}, (), Y, Ȳ, side, ul, α, _A, _B)
         _∇symm_A = (Y, Ȳ, A)->∇(symm, Val{4}, (), Y, Ȳ, side, ul, _α, A, _B)
         _∇symm_B = (Y, Ȳ, B)->∇(symm, Val{5}, (), Y, Ȳ, side, ul, _α, _A, B)
-        _∇symm_A_inp = (Y, Ȳ, A)->∇(fill!(similar(A), 0), symm, Val{4}, (), Y, Ȳ, side, ul, _α, A, _B)
-        _∇symm_B_inp = (Y, Ȳ, B)->∇(fill!(similar(B), 0), symm, Val{5}, (), Y, Ȳ, side, ul, _α, _A, B)
+        _∇symm_A_inp = (Y, Ȳ, A)->∇(copy(_δA), symm, Val{4}, (), Y, Ȳ, side, ul, _α, A, _B) - _δA
+        _∇symm_B_inp = (Y, Ȳ, B)->∇(copy(_δB), symm, Val{5}, (), Y, Ȳ, side, ul, _α, _A, B) - _δB
 
         B_gen = side == 'L' ? mPQ : mQP
         @test check_errs(N, _symm_α, _∇symm_α, B_gen, sc, sc)
@@ -223,8 +228,8 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         _symm_B = B->symm(side, ul, _A, B)
         _∇symm_A = (Y, Ȳ, A)->∇(symm, Val{3}, (), Y, Ȳ, side, ul, A, _B)
         _∇symm_B = (Y, Ȳ, B)->∇(symm, Val{4}, (), Y, Ȳ, side, ul, _A, B)
-        _∇symm_A_inp = (Y, Ȳ, A)->∇(fill!(similar(A), 0), symm, Val{3}, (), Y, Ȳ, side, ul, A, _B)
-        _∇symm_B_inp = (Y, Ȳ, B)->∇(fill!(similar(B), 0), symm, Val{4}, (), Y, Ȳ, side, ul, _A, B)
+        _∇symm_A_inp = (Y, Ȳ, A)->∇(copy(_δA), symm, Val{3}, (), Y, Ȳ, side, ul, A, _B) - _δA
+        _∇symm_B_inp = (Y, Ȳ, B)->∇(copy(_δB), symm, Val{4}, (), Y, Ȳ, side, ul, _A, B) - _δB
 
         B_gen = side == 'L' ? mPQ : mQP
         @test check_errs(N, _symm_A, _∇symm_A, B_gen, mPP, mPP)
