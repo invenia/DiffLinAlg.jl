@@ -1,4 +1,5 @@
-import Base: -, trace, inv, det, logdet, transpose, ctranspose, vecnorm
+import Base: -, trace, inv, det, logdet, transpose, vecnorm
+import Compat.Base: ctranspose
 
 ############################# Unary sensitivities #############################
 push!(ops, DiffOp(:(Base.:-), :(Tuple{DLA.AA}), [true]))

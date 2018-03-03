@@ -1,6 +1,6 @@
 @testset "BLAS" begin
 
-import Base.BLAS: dot, nrm2, asum, gemm, gemv, symm, symv, trmm, trmv, trsm, trsv
+import Base.BLAS: nrm2, asum, gemm, gemv, symm, symv, trmm, trmv, trsm, trsv
 
 
 ################################## Level 1 ##################################
@@ -17,15 +17,15 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
 
     # Strided dot.
     _x, _y = vP(), vQ()
-    _dot2, _dot4 = x->dot(5, x, 2, _y, 1), y->dot(5, _x, 2, y, 1)
-    _∇dot2 = (z, z̄, x)->∇(dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1)
-    _∇dot4 = (z, z̄, y)->∇(dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1)
+    _dot2, _dot4 = x->BLAS.dot(5, x, 2, _y, 1), y->BLAS.dot(5, _x, 2, y, 1)
+    _∇dot2 = (z, z̄, x)->∇(BLAS.dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1)
+    _∇dot4 = (z, z̄, y)->∇(BLAS.dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1)
     @test check_errs(N, _dot2, _∇dot2, sc, vP, vP)
     @test check_errs(N, _dot4, _∇dot4, sc, vQ, vQ)
 
     # In-place strided dot.
-    _∇dot2 = (z, z̄, x)->∇(zeros(P), dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1)
-    _∇dot4 = (z, z̄, y)->∇(zeros(Q), dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1)
+    _∇dot2 = (z, z̄, x)->∇(zeros(P), BLAS.dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1)
+    _∇dot4 = (z, z̄, y)->∇(zeros(Q), BLAS.dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1)
     @test check_errs(N, _dot2, _∇dot2, sc, vP, vP)
     @test check_errs(N, _dot4, _∇dot4, sc, vQ, vQ)
 

@@ -1,4 +1,4 @@
-import Base.LinAlg.BLAS: asum, dot, blascopy!, nrm2, scal, scal!, gemm, gemm!, gemv, gemv!,
+import Base.LinAlg.BLAS: asum, blascopy!, nrm2, scal, scal!, gemm, gemm!, gemv, gemv!,
     syrk, symm, symm!, symv, symv!, trmm, trsm, trmv, trsv, trsv!, ger!
 
 ################################## Level 1 ##################################
@@ -18,14 +18,14 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.dot),
     :(Tuple{Int, DLA.SA{<:DLA.BF}, Int, DLA.SA{<:DLA.BF}, Int}),
     [false, true, false, true, false],
 ))
-∇(::typeof(dot), ::Arg2, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
-    scal!(n, z̄, blascopy!(n, y, iy, zeros(x), ix), ix)
-∇(::typeof(dot), ::Arg4, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
-    scal!(n, z̄, blascopy!(n, x, ix, zeros(y), iy), iy)
-∇(x̄, ::typeof(dot), ::Arg2, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
-    (x̄ .= x̄ .+ scal!(n, z̄, blascopy!(n, y, iy, zeros(x), ix), ix))
-∇(ȳ, ::typeof(dot), ::Arg4, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
-    (ȳ .= ȳ .+ scal!(n, z̄, blascopy!(n, x, ix, zeros(y), iy), iy))
+∇(::typeof(BLAS.dot), ::Arg2, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
+    scal!(n, z̄, blascopy!(n, y, iy, fill!(similar(x), zero(eltype(x))), ix), ix)
+∇(::typeof(BLAS.dot), ::Arg4, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
+    scal!(n, z̄, blascopy!(n, x, ix, fill!(similar(y), zero(eltype(y))), iy), iy)
+∇(x̄, ::typeof(BLAS.dot), ::Arg2, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
+    (x̄ .= x̄ .+ scal!(n, z̄, blascopy!(n, y, iy, fill!(similar(x), zero(eltype(x))), ix), ix))
+∇(ȳ, ::typeof(BLAS.dot), ::Arg4, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
+    (ȳ .= ȳ .+ scal!(n, z̄, blascopy!(n, x, ix, fill!(similar(y), zero(eltype(y))), iy), iy))
 
 # Unit-stride `nrm2`.
 push!(ops, DiffOp(:(Base.LinAlg.BLAS.nrm2),
@@ -41,9 +41,9 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.nrm2),
     [false, true, false]
 ))
 ∇(::typeof(nrm2), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer) =
-    scal!(n, ȳ / y, blascopy!(n, x, inc, zeros(x), inc), inc)
+    scal!(n, ȳ / y, blascopy!(n, x, inc, fill!(similar(x), zero(eltype(x))), inc), inc)
 ∇(x̄::SA{<:BF}, ::typeof(nrm2), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer) =
-    (x̄ .= x̄ .+ scal!(n, ȳ / y, blascopy!(n, x, inc, zeros(x), inc), inc))
+    (x̄ .= x̄ .+ scal!(n, ȳ / y, blascopy!(n, x, inc, fill!(similar(x), zero(eltype(x))), inc), inc))
 
 # Unit-stride `asum`.
 push!(ops, DiffOp(:(Base.LinAlg.BLAS.asum),
@@ -59,9 +59,9 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.asum),
     [false, true, false]
 ))
 ∇(::typeof(asum), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x, inc::Integer) =
-    scal!(n, ȳ, blascopy!(n, sign.(x), inc, zeros(x), inc), inc)
+    scal!(n, ȳ, blascopy!(n, sign.(x), inc, fill!(similar(x), zero(eltype(x))), inc), inc)
 ∇(x̄::SA{<:BF}, ::typeof(asum), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer) =
-    (x̄ .= x̄ .+ scal!(n, ȳ, blascopy!(n, sign.(x), inc, zeros(x), inc), inc))
+    (x̄ .= x̄ .+ scal!(n, ȳ, blascopy!(n, sign.(x), inc, fill!(similar(x), zero(eltype(x))), inc), inc))
 
 # Some weird stuff going on that I haven't figured out yet. This is a very old attempt.
 # let f = :(scal{T <: AbstractArray, V <: AbstractFloat})

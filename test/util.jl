@@ -1,9 +1,11 @@
 @testset "util" begin
     import DiffLinearAlgebra: importable
-    @test Expr(:import, importable(:Foo)...) == :(import Foo)
-    @test Expr(:import, importable(:(Package.Foo))...) == :(import Package.Foo)
-    @test Expr(:import, importable(:(Package.Subpackage.Foo))...) ==
-        :(import Package.Subpackage.Foo)
+    # @test Expr(:import, Expr(Symbol("."), importable(:Foo)...)) ==
+    #     :(import Foo)
+    # @test Expr(:import, Expr(Symbol("."), importable(:(Package.Foo))...)) ==
+    #     :(import Package.Foo)
+    # @test Expr(:import, Expr(Symbol("."), importable(:(Package.Subpackage.Foo))...)) ==
+    #     :(import Package.Subpackage.Foo)
 
     @test import_expr(DLA.DiffOp(:Foo, :(Tuple{Foo}), [true])) ==
         :(import Foo)

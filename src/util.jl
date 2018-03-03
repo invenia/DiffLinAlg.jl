@@ -23,7 +23,7 @@ function importable(ex::Expr)
     ex.head === :. || error("Expression is not valid as an import: $ex")
     result = importable(ex.args[1])
     push!(result, ex.args[2].value)
-    result
+    return result
 end
 importable(sym::Symbol) = Any[sym]
 
