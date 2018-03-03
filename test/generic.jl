@@ -1,6 +1,6 @@
 @testset "Generic" begin
 
-    let P = 5, Q = 4, rng = MersenneTwister(123456), N = 100
+    let P = 4, Q = 3, rng = MersenneTwister(123456), N = 100
 
         # Utility for generating square matrices, vectors, non-square matrices and scalars.
         mPP, mQQ = ()->randn(rng, P, P), ()->randn(rng, Q, Q)
