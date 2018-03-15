@@ -141,12 +141,15 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.trmv),
     :(Tuple{Char, Char, Char, DLA.SM{T}, DLA.SV{T}} where T<:DLA.BF),
     [false, false, false, true, true],
 ))
-∇(::typeof(trmv), ::Arg4, p, y::SV{T}, ȳ::SV{T},
+function ∇(::typeof(trmv), ::Arg4, p, y::SV{T}, ȳ::SV{T},
     ul::Char, ta::Char, dA::Char,
     A::SM{T},
     b::SV{T},
-) where T<:BF =
-    (uppercase(ul) == 'L' ? tril! : triu!)(uppercase(ta) == 'N' ? ȳ * b' : b * ȳ')
+) where T<:BF
+    Ā = (uppercase(ul) == 'L' ? tril! : triu!)(uppercase(ta) == 'N' ? ȳ * b' : b * ȳ')
+    dA == 'U' && fill!(view(Ā, diagind(Ā)), zero(T))
+    return Ā
+end
 ∇(::typeof(trmv), ::Arg5, p, y::SV{T}, ȳ::SV{T},
     ul::Char, ta::Char, dA::Char,
     A::SM{T},
@@ -164,7 +167,9 @@ function ∇(::typeof(trsv), ::Arg4, p, y::SV{T}, ȳ::SV{T},
     x::SV{T},
 ) where T<:BF
     Y, Ȳ, X = reshape(y, length(y), 1), reshape(ȳ, length(ȳ), 1), reshape(x, length(x), 1)
-    return ∇(trsm, Val{6}, p, Y, Ȳ, 'L', ul, ta, dA, one(T), A, X)
+    Ā = ∇(trsm, Val{6}, p, Y, Ȳ, 'L', ul, ta, dA, one(T), A, X)
+    dA == 'U' && fill!(view(Ā, diagind(Ā)), zero(T))
+    return Ā
 end
 ∇(::typeof(trsv), ::Arg5, p, y::SV{T}, ȳ::SV{T},
     ul::Char, ta::Char, dA::Char,
@@ -430,6 +435,7 @@ function ∇(::typeof(trmm), ::Arg6, p, Y::SM{T}, Ȳ::SM{T},
         uppercase(ta) == 'N' ?
             gemm('T', 'N', α, B, Ȳ) :
             gemm('T', 'N', α, Ȳ, B)
+    dA == 'U' && fill!(view(Ā_full, diagind(Ā_full)), zero(T))
     return (uppercase(ul) == 'L' ? tril! : triu!)(Ā_full)
 end
 ∇(::typeof(trmm), ::Type{Val{7}}, p, Y::SM{T}, Ȳ::SM{T},
@@ -471,6 +477,7 @@ function ∇(::typeof(trsm), ::Arg6, p, Y::SM{T}, Ȳ::SM{T},
         uppercase(ta) == 'N' ?
             trsm('R', ul, 'T', dA, -one(T), A, Y'Ȳ) :
             trsm('L', ul, 'T', dA, -one(T), A, Ȳ'Y)
+    dA == 'U' && fill!(view(Ā_full, diagind(Ā_full)), zero(T))
     return (uppercase(ul) == 'L' ? tril! : triu!)(Ā_full)
 end
 ∇(::typeof(trsm), ::Type{Val{7}}, p, Y::SM{T}, Ȳ::SM{T},

@@ -134,7 +134,7 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
         @test check_errs(N, _symv_x, _∇symv_x_inp, vP, x_gen, x_gen)
     end
 
-    for f in [trmv, trsv], ul in ['L', 'U'], tA in ['N', 'T'], dA in ['N']
+    for f in [trmv, trsv], ul in ['L', 'U'], tA in ['N', 'T'], dA in ['U', 'N']
         A_gen, x_gen = mPP, vP
         _A, _x = A_gen(), x_gen()
 
@@ -239,7 +239,7 @@ let P = 5, Q = 3, rng = MersenneTwister(123456), N = 10
     end
 
     # trmm / trsm:
-    for f in [trmm, trsm], side in ['L', 'R'], ul in ['L', 'U'], tA in ['N', 'T'], dA in ['N']
+    for f in [trmm, trsm], side in ['L', 'R'], ul in ['L', 'U'], tA in ['N', 'T'], dA in ['U', 'N']
         A_gen = ()->mPP() + 1e-3I
         B_gen = side == 'L' ? mPQ : mQP
         C_gen = B_gen
