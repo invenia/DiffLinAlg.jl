@@ -1,5 +1,6 @@
-import Base: -, trace, inv, det, logdet, transpose, vecnorm
+import Base: -, trace, inv, det, logdet, transpose, ctranspose, vecnorm, kron
 import Compat.Base: ctranspose
+import Base: -, trace, inv, det, logdet, transpose
 
 ############################# Unary sensitivities #############################
 push!(ops, DiffOp(:(Base.:-), :(Tuple{DLA.AA}), [true]))
@@ -123,3 +124,34 @@ push!(ops, DiffOp(:(Base.vecnorm), :(Tuple{DLA.AA, Real}), [true, true]))
 push!(ops, DiffOp(:(Base.vecnorm), :(Tuple{Real, Real}), [true, true]))
 ∇(::typeof(vecnorm), ::Arg1, p, Y::Real, Ȳ::Real, A::Real, B::Real) = Ȳ * sign(A)
 ∇(::typeof(vecnorm), ::Arg2, p, Y::Real, Ȳ::Real, A::Real, B::Real) = 0
+
+push!(ops, DiffOp(:(Base.kron), :(Tuple{AM, AM}), [true, true]))
+∇(::typeof(kron), ::Type{Val{1}}, p, Y::AM, Ȳ::AM, A::AM, B::AM) =
+    ∇(zero(A), kron, Val{1}, p, Y, Ȳ, A, B)
+∇(::typeof(kron), ::Type{Val{2}}, p, Y::AM, Ȳ::AM, A::AM, B::AM) =
+    ∇(zero(B), kron, Val{2}, p, Y, Ȳ, A, B)
+function ∇(Ā::AM, ::typeof(kron), ::Type{Val{1}}, p, Y::AM, Ȳ::AM, A::AM, B::AM)
+    @assert size(Ā) == size(A)
+    (I, J), (K, L), m = size(A), size(B), length(Y)
+    @inbounds for j = reverse(1:J), l = reverse(1:L), i = reverse(1:I)
+        āij = Ā[i, j]
+        for k = reverse(1:K)
+            āij += Ȳ[m] * B[k, l]
+            m -= 1
+        end
+        Ā[i, j] = āij
+    end
+    return Ā
+end
+function ∇(B̄::AM, ::typeof(kron), ::Type{Val{2}}, p, Y::AM, Ȳ::AM, A::AM, B::AM)
+    @assert size(B̄) == size(B)
+    (I, J), (K, L), m = size(A), size(B), length(Y)
+    @inbounds for j = reverse(1:J), l = reverse(1:L), i = reverse(1:I)
+        aij = A[i, j]
+        for k = reverse(1:K)
+            B̄[k, l] += aij * Ȳ[m]
+            m -= 1
+        end
+    end
+    return B̄
+end

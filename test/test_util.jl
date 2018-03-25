@@ -17,7 +17,7 @@ check_errs(N::Int, f, ∇f, Ȳ, X, V, ε_abs=1e-7, ε_rel=1e-5)::Bool =
 
 # Utility to create the closures required for unit testing.
 unary_ȲD(f) = (f, (Y, Ȳ, X)->∇(f, Val{1}, (), Y, Ȳ, X))
-unary_ȲD_inplace(f, X̄0) = (f, (Y, Ȳ, X)->∇(copy(X̄0), f, Val{1}, (), Y, Ȳ, X))
+unary_ȲD_inplace(f, X̄0) = (f, (Y, Ȳ, X)->∇(copy(X̄0), f, Val{1}, (), Y, Ȳ, X) - X̄0)
 function binary_ȲD(f, arg::Int, G)
     G_ = G()
     if arg == 1
@@ -29,8 +29,8 @@ end
 function binary_ȲD_inplace(f, arg::Int, G, X̄0)
     G_ = G()
     if arg == 1
-        return X->f(X, G_), (Y, Ȳ, X)->∇(copy(X̄0), f, Val{1}, (), Y, Ȳ, X, G_)
+        return X->f(X, G_), (Y, Ȳ, X)->∇(copy(X̄0), f, Val{1}, (), Y, Ȳ, X, G_) - X̄0
     else
-        return X->f(G_, X), (Y, Ȳ, X)->∇(copy(X̄0), f, Val{2}, (), Y, Ȳ, G_, X)
+        return X->f(G_, X), (Y, Ȳ, X)->∇(copy(X̄0), f, Val{2}, (), Y, Ȳ, G_, X) - X̄0
     end
 end
