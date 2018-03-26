@@ -1,20 +1,27 @@
-import Base.LinAlg.BLAS: asum, blascopy!, nrm2, scal, scal!, gemm, gemm!, gemv, gemv!,
+import LinearAlgebra: dot
+import LinearAlgebra.BLAS: asum, blascopy!, nrm2, scal, scal!, gemm, gemm!, gemv, gemv!,
     syrk, symm, symm!, symv, symv!, trmm, trsm, trmv, trsv, trsv!, ger!
 
 ################################## Level 1 ##################################
 
 # Unit-stride `dot`.
-push!(ops, DiffOp(:(Base.dot),
+push!(ops, DiffOp(:(LinearAlgebra.dot),
     :(Tuple{DLA.SA{<:DLA.BF}, DLA.SA{<:DLA.BF}}),
     [true, true]
 ))
-∇(::typeof(dot), ::Arg1, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = z̄ .* y
-∇(::typeof(dot), ::Arg2, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = z̄ .* x
-∇(x̄, ::typeof(dot), ::Arg1, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = (x̄ .= x̄ .+ z̄ .* y)
-∇(ȳ, ::typeof(dot), ::Arg2, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = (ȳ .= ȳ .+ z̄ .* x)
+∇(::typeof(LinearAlgebra.dot), ::Arg1, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = z̄ .* y
+∇(::typeof(LinearAlgebra.dot), ::Arg2, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF}) = z̄ .* x
+function ∇(x̄, ::typeof(LinearAlgebra.dot), ::Arg1, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF})
+    x̄ .= x̄ .+ z̄ .* y
+    return x̄
+end
+function ∇(ȳ, ::typeof(LinearAlgebra.dot), ::Arg2, p, z::BF, z̄::BF, x::SA{<:BF}, y::SA{<:BF})
+    ȳ .= ȳ .+ z̄ .* x
+    return ȳ
+end
 
 # Arbitrary-stride `dot`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.dot),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.dot),
     :(Tuple{Int, DLA.SA{<:DLA.BF}, Int, DLA.SA{<:DLA.BF}, Int}),
     [false, true, false, true, false],
 ))
@@ -22,47 +29,60 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.dot),
     scal!(n, z̄, blascopy!(n, y, iy, fill!(similar(x), zero(eltype(x))), ix), ix)
 ∇(::typeof(BLAS.dot), ::Arg4, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
     scal!(n, z̄, blascopy!(n, x, ix, fill!(similar(y), zero(eltype(y))), iy), iy)
-∇(x̄, ::typeof(BLAS.dot), ::Arg2, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
-    (x̄ .= x̄ .+ scal!(n, z̄, blascopy!(n, y, iy, fill!(similar(x), zero(eltype(x))), ix), ix))
-∇(ȳ, ::typeof(BLAS.dot), ::Arg4, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int) =
-    (ȳ .= ȳ .+ scal!(n, z̄, blascopy!(n, x, ix, fill!(similar(y), zero(eltype(y))), iy), iy))
+function ∇(x̄, ::typeof(BLAS.dot), ::Arg2, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int)
+    x̄ .= x̄ .+ scal!(n, z̄, blascopy!(n, y, iy, fill!(similar(x), zero(eltype(x))), ix), ix)
+    return x̄
+end
+function ∇(ȳ, ::typeof(BLAS.dot), ::Arg4, p, z::BF, z̄::BF, n::Int, x::SA{<:BF}, ix::Int, y::SA{<:BF}, iy::Int)
+    ȳ .= ȳ .+ scal!(n, z̄, blascopy!(n, x, ix, fill!(similar(y), zero(eltype(y))), iy), iy)
+    return ȳ
+end
 
 # Unit-stride `nrm2`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.nrm2),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.nrm2),
     :(Tuple{DLA.SA{<:DLA.BF}}),
     [true]
 ))
 ∇(::typeof(nrm2), ::Arg1, p, y::BF, ȳ::BF, x::SA{<:BF}) = x .* (ȳ / y)
-∇(x̄::AA, ::typeof(nrm2), ::Arg1, p, y::BF, ȳ::BF, x::SA{<:BF}) = (x̄ .= x̄ .+ x .* (ȳ / y))
+function ∇(x̄::AA, ::typeof(nrm2), ::Arg1, p, y::BF, ȳ::BF, x::SA{<:BF})
+    x̄ .= x̄ .+ x .* (ȳ / y)
+    return x̄
+end
 
 # Arbitrary-stride `nrm2`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.nrm2),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.nrm2),
     :(Tuple{Integer, DLA.SA{<:DLA.BF}, Integer}),
     [false, true, false]
 ))
 ∇(::typeof(nrm2), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer) =
     scal!(n, ȳ / y, blascopy!(n, x, inc, fill!(similar(x), zero(eltype(x))), inc), inc)
-∇(x̄::SA{<:BF}, ::typeof(nrm2), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer) =
-    (x̄ .= x̄ .+ scal!(n, ȳ / y, blascopy!(n, x, inc, fill!(similar(x), zero(eltype(x))), inc), inc))
+function ∇(x̄::SA{<:BF}, ::typeof(nrm2), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer)
+    x̄ .= x̄ .+ scal!(n, ȳ / y, blascopy!(n, x, inc, fill!(similar(x), zero(eltype(x))), inc), inc)
+    return x̄
+end
 
 # Unit-stride `asum`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.asum),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.asum),
     :(Tuple{DLA.SA{<:DLA.BF}}),
     [true]
 ))
 ∇(::typeof(asum), ::Arg1, p, y::BF, ȳ::BF, x::SA{<:BF}) = ȳ .* sign.(x)
-∇(x̄::AA, ::typeof(asum), ::Arg1, p, y::BF, ȳ::BF, x::SA{<:BF}) = (x̄ .= x̄ .+ ȳ .* sign.(x))
+function ∇(x̄::AA, ::typeof(asum), ::Arg1, p, y::BF, ȳ::BF, x::SA{<:BF})
+    x̄ .= x̄ .+ ȳ .* sign.(x)
+    return x̄
+end
 
 # Arbitrary-stride `asum`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.asum),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.asum),
     :(Tuple{Integer, DLA.SA{<:DLA.BF}, Integer}),
     [false, true, false]
 ))
 ∇(::typeof(asum), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x, inc::Integer) =
     scal!(n, ȳ, blascopy!(n, sign.(x), inc, fill!(similar(x), zero(eltype(x))), inc), inc)
-∇(x̄::SA{<:BF}, ::typeof(asum), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer) =
-    (x̄ .= x̄ .+ scal!(n, ȳ, blascopy!(n, sign.(x), inc, fill!(similar(x), zero(eltype(x))), inc), inc))
-
+function ∇(x̄::SA{<:BF}, ::typeof(asum), ::Arg2, p, y::BF, ȳ::BF, n::Integer, x::SA{<:BF}, inc::Integer)
+    x̄ .= x̄ .+ scal!(n, ȳ, blascopy!(n, sign.(x), inc, fill!(similar(x), zero(eltype(x))), inc), inc)
+    return x̄
+end
 # Some weird stuff going on that I haven't figured out yet. This is a very old attempt.
 # let f = :(scal{T <: AbstractArray, V <: AbstractFloat})
 #     ā = :(blascopy!(n, z̄, inc, zeros(X), inc) .* X)
@@ -73,7 +93,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.asum),
 ################################## Level 2 ##################################
 
 # `gemv` sensitivities implementation.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemv),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.gemv),
     :(Tuple{Char, T, DLA.SM{T}, DLA.SV{T}} where T<:DLA.BF),
     [false, true, true, true],
 ))
@@ -89,7 +109,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemv),
     gemv!(uppercase(tA) == 'N' ? 'T' : 'N', α, A, ȳ, one(T), x̄)
 
 # `gemv` sensitivities implementation with `α = 1`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemv),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.gemv),
     :(Tuple{Char, DLA.SM{T}, DLA.SV{T}} where T<:DLA.BF),
     [false, true, true],
 ))
@@ -103,7 +123,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemv),
     ∇(x̄, gemv, Val{4}, p, y, ȳ, tA, one(T), A, x)
 
 # `symv` sensitivity implementations.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.symv),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.symv),
     :(Tuple{Char, T, DLA.SM{T}, DLA.SV{T}} where T<:DLA.BF),
     [false, true, true, true],
 ))
@@ -123,7 +143,7 @@ end
     symv!(ul, α, A, ȳ, one(T), x̄)
 
 # `symv` sensitivity implementations for `α=1`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.symv),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.symv),
     :(Tuple{Char, DLA.SM{T}, DLA.SV{T}} where T<:DLA.BF),
     [false, true, true],
 ))
@@ -137,7 +157,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.symv),
     ∇(B̄, symv, Val{4}, p, y, ȳ, ul, one(T), A, x)
 
 # `trmv` sensitivity implementations.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.trmv),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.trmv),
     :(Tuple{Char, Char, Char, DLA.SM{T}, DLA.SV{T}} where T<:DLA.BF),
     [false, false, false, true, true],
 ))
@@ -157,7 +177,7 @@ end
 ) where T<:BF = trmv(ul, uppercase(ta) == 'N' ? 'T' : 'N', dA, A, ȳ)
 
 # `trsv` sensitivity implementations.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.trsv),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.trsv),
     :(Tuple{Char, Char, Char, DLA.SM{T}, DLA.SV{T}} where T<:DLA.BF),
     [false, false, false, true, true],
 ))
@@ -181,7 +201,7 @@ end
 ################################## Level 3 ##################################
 
 # `gemm` sensitivities implementation.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemm),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.gemm),
     :(Tuple{Char, Char, T, DLA.SM{T}, DLA.SM{T}} where T<:DLA.BF),
     [false, false, true, true, true],
 ))
@@ -250,7 +270,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemm),
             gemm!('T', 'T', α, Ȳ, A, one(T), B̄)
 
 # `gemm` sensitivities implementation for `α = 1`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemm),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.gemm),
     :(Tuple{Char, Char, DLA.SM{T}, DLA.SM{T}} where T<:DLA.BF),
     [false, false, true, true],
 ))
@@ -333,7 +353,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.gemm),
 # ) where T<:∇Scalar = ∇(Ā, syrk, Arg{4}, p, Y, Ȳ, uplo, char, one(eltype(A)), A)
 
 # `symm` sensitivity implementations.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.symm),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.symm),
     :(Tuple{Char, Char, T, DLA.SM{T}, DLA.SM{T}} where T<:DLA.BF),
     [false, false, true, true, true],
 ))
@@ -382,7 +402,7 @@ end
 ) where T<:BF = symm!(side, ul, α, A, Ȳ, one(T), B̄)
 
 # `symm` sensitivity implementations for `α=1`.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.symm),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.symm),
     :(Tuple{Char, Char, DLA.SM{T}, DLA.SM{T}} where T<:DLA.BF),
     [false, false, true, true],
 ))
@@ -412,7 +432,7 @@ push!(ops, DiffOp(:(Base.LinAlg.BLAS.symm),
 ) where T<:BF = ∇(B̄, symm, Val{5}, p, Y, Ȳ, side, ul, one(T), A, B)
 
 # `trmm` sensitivity implementations.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.trmm),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.trmm),
     :(Tuple{Char, Char, Char, Char, T, DLA.SM{T}, DLA.SM{T}} where T<:DLA.BF),
     [false, false, false, false, true, true, true],
 ))
@@ -454,7 +474,7 @@ end
 
 
 # `trsm` sensitivity implementations.
-push!(ops, DiffOp(:(Base.LinAlg.BLAS.trsm),
+push!(ops, DiffOp(:(LinearAlgebra.BLAS.trsm),
     :(Tuple{Char, Char, Char, Char, T, DLA.SM{T}, DLA.SM{T}} where T<:DLA.BF),
     [false, false, false, false, true, true, true],
 ))

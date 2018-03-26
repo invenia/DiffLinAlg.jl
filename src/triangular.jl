@@ -1,4 +1,4 @@
-import Base: det, logdet, LowerTriangular, UpperTriangular
+import LinearAlgebra: det, logdet, LowerTriangular, UpperTriangular
 export det, logdet, LowerTriangular, UpperTriangular
 
 for (ctor, ctor_sym, T, T_sym) in zip([:LowerTriangular, :UpperTriangular],
@@ -9,7 +9,7 @@ for (ctor, ctor_sym, T, T_sym) in zip([:LowerTriangular, :UpperTriangular],
     @eval begin
 
     push!(ops, DiffOp($ctor_sym, :(Tuple{DLA.AM}), [true]))
-    ∇(::Type{$ctor}, ::Arg1, p, Y::$T, Ȳ::$T, X::AM) = full(Ȳ)
+    ∇(::Type{$ctor}, ::Arg1, p, Y::$T, Ȳ::$T, X::AM) = Matrix(Ȳ)
     ∇(X̄::AM, ::Type{$ctor}, ::Arg1, p, Y::$T, Ȳ::$T, X::AM) = broadcast!(+, X̄, X̄, Ȳ)
 
     push!(ops, DiffOp(:(Base.det), Expr(:curly, :Tuple, $T_sym), [true]))

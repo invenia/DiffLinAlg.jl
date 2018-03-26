@@ -2,7 +2,7 @@ __precompile__(true)
 
 module DiffLinearAlgebra
 
-    using Compat
+    using LinearAlgebra
 
     # Some aliases used repeatedly throughout the package.
     const AV, AM, AVM, AA = AbstractVector, AbstractMatrix, AbstractVecOrMat, AbstractArray

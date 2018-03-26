@@ -1,5 +1,5 @@
-import Base.LinAlg.BLAS: gemv, gemv!, gemm!, trsm!, axpy!, ger!
-import Base.LinAlg: chol, copytri!
+import LinearAlgebra.BLAS: gemv, gemv!, gemm!, trsm!, axpy!, ger!
+import LinearAlgebra: chol, copytri!
 
 #=
 See [1] for implementation details: pages 5-9 in particular. The derivations presented in
@@ -16,7 +16,7 @@ way forward. There is, therefore, some code below to see what happens when we do
 
 const UT = UpperTriangular
 ∇(::typeof(chol), ::Arg1, p, U::UT{T}, Ū::AM{T}, Σ::AM{T}) where T<:BF =
-    chol_blocked_rev(full(Ū), full(U), 25, true)
+    chol_blocked_rev(Matrix(Ū), Matrix(U), 25, true)
 
 # Experimental code implementing the algebraic sensitivities discussed in [2].
 # """
@@ -158,7 +158,7 @@ function chol_blocked_rev!(Σ̄::AM{T}, L::AM{T}, Nb::Int, upper::Bool) where T<
     M, N = size(Σ̄)
     M != N && throw(ArgumentError("Σ̄ is not square."))
 
-    tmp = Matrix{T}(Nb, Nb)
+    tmp = Matrix{T}(undef, Nb, Nb)
 
     # Compute the reverse-mode diff.
     k = N

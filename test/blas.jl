@@ -1,6 +1,6 @@
 @testset "BLAS" begin
 
-import Base.BLAS: nrm2, asum, gemm, gemv, symm, symv, trmm, trmv, trsm, trsv
+import LinearAlgebra.BLAS: nrm2, asum, gemm, gemv, symm, symv, trmm, trmv, trsm, trsv
 
 
 ################################## Level 1 ##################################
@@ -10,10 +10,10 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
     sc, vP, vQ = ()->randn(rng), ()->randn(rng, P), ()->randn(rng, Q)
 
     # Unit-stride dot.
-    @test check_errs(N, binary_ȲD(dot, 1, vP)..., sc, vP, vP)
-    @test check_errs(N, binary_ȲD(dot, 2, vP)..., sc, vP, vP)
-    @test check_errs(N, binary_ȲD_inplace(dot, 1, vP, vP())..., sc, vP, vP)
-    @test check_errs(N, binary_ȲD_inplace(dot, 2, vP, vP())..., sc, vP, vP)
+    @test check_errs(N, binary_ȲD(LinearAlgebra.dot, 1, vP)..., sc, vP, vP)
+    @test check_errs(N, binary_ȲD(LinearAlgebra.dot, 2, vP)..., sc, vP, vP)
+    @test check_errs(N, binary_ȲD_inplace(LinearAlgebra.dot, 1, vP, vP())..., sc, vP, vP)
+    @test check_errs(N, binary_ȲD_inplace(LinearAlgebra.dot, 2, vP, vP())..., sc, vP, vP)
 
     # Strided dot.
     _x, _y = vP(), vQ()
@@ -25,8 +25,8 @@ let P = 10, Q = 6, rng = MersenneTwister(123456), N = 10
 
     # In-place strided dot.
     _δx, _δy = vP(), vQ()
-    _∇dot2 = (z, z̄, x)->∇(copy(_δx), dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1) - _δx
-    _∇dot4 = (z, z̄, y)->∇(copy(_δy), dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1) - _δy
+    _∇dot2 = (z, z̄, x)->∇(copy(_δx), BLAS.dot, Val{2}, (), z, z̄, 5, x, 2, _y, 1) - _δx
+    _∇dot4 = (z, z̄, y)->∇(copy(_δy), BLAS.dot, Val{4}, (), z, z̄, 5, _x, 2, y, 1) - _δy
     @test check_errs(N, _dot2, _∇dot2, sc, vP, vP)
     @test check_errs(N, _dot4, _∇dot4, sc, vQ, vQ)
 

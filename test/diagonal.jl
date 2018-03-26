@@ -28,18 +28,18 @@
 
         # Test on-central-diagonal `diagm`.
         x0 = randn!(rng, similar(vP()))
-        @test check_errs(N, unary_ȲD(diagm)..., mPP, vP, vP)
-        @test check_errs(N, unary_ȲD_inplace(diagm, x0)..., mPP, vP, vP)
+        _diagm = x->diagm(0=>x)
+        _∇diagm = (Y, Ȳ, x)->∇(diagm, Val{1}, (), Y, Ȳ, 0=>x)
+        _∇diagm_inp = (Y, Ȳ, x)->∇(copy(x0), diagm, Val{1}, (), Y, Ȳ, 0=>x) - x0
+        @test check_errs(N, _diagm, _∇diagm, mPP, vP, vP)
+        @test check_errs(N, _diagm, _∇diagm_inp, mPP, vP, vP)
 
         # Test off-central-diagonal `diagm`.
-        _diagm = x->diagm(x, k)
-        _∇diagm = (Y, Ȳ, x)->∇(diagm, Val{1}, (), Y, Ȳ, x, k)
-        _∇diagm_inp = (Y, Ȳ, x)->∇(copy(x0), diagm, Val{1}, (), Y, Ȳ, x, k) - x0
+        _diagm = x->diagm(k=>x)
+        _∇diagm = (Y, Ȳ, x)->∇(diagm, Val{1}, (), Y, Ȳ, k=>x)
+        _∇diagm_inp = (Y, Ȳ, x)->∇(copy(x0), diagm, Val{1}, (), Y, Ȳ, k=>x) - x0
         @test check_errs(N, _diagm, _∇diagm, mPPk, vP, vP)
         @test check_errs(N, _diagm, _∇diagm_inp, mPPk, vP, vP)
-
-        # Test scalar input to `diagm`.
-        @test check_errs(N, unary_ȲD(diagm)..., ()->randn(rng, 1, 1), sc, sc)
     end
 
     # Diagonal:

@@ -6,7 +6,7 @@
         A = randn(rng, N, N)
         r, d, B2, c = level2partition(A, 4, false)
         R, D, B3, C = level3partition(A, 4, 4, false)
-        @test all(r .== R.')
+        @test all(r .== R')
         @test all(d .== D)
         @test B2[1] == B3[1]
         @test all(c .== C)
@@ -15,7 +15,7 @@
         rᵀ, dᵀ, B2ᵀ, cᵀ = level2partition(transpose(A), 4, true)
         @test r == rᵀ
         @test d == dᵀ
-        @test B2.' == B2ᵀ
+        @test B2' == B2ᵀ
         @test c == cᵀ
 
         # Check that level3partition with 'U' is consistent with 'L'.
@@ -28,13 +28,13 @@
     end
 
     let rng = MersenneTwister(123456), N = 10
-        A, Ā = full.(LowerTriangular.(randn.(rng, [N, N], [N, N])))
-        B, B̄ = transpose.([A, Ā])
+        A, Ā = Matrix.(LowerTriangular.(randn.(rng, [N, N], [N, N])))
+        B, B̄ = copy.(transpose.([A, Ā]))
         @test chol_unblocked_rev(Ā, A, false) ≈ chol_blocked_rev(Ā, A, 1, false)
         @test chol_unblocked_rev(Ā, A, false) ≈ chol_blocked_rev(Ā, A, 3, false)
         @test chol_unblocked_rev(Ā, A, false) ≈ chol_blocked_rev(Ā, A, 5, false)
         @test chol_unblocked_rev(Ā, A, false) ≈ chol_blocked_rev(Ā, A, 10, false)
-        @test chol_unblocked_rev(Ā, A, false) ≈ transpose(chol_unblocked_rev(B̄, B, true))
+        @test chol_unblocked_rev(Ā, A, false) ≈ chol_unblocked_rev(B̄, B, true)'
 
         @test chol_unblocked_rev(B̄, B, true) ≈ chol_blocked_rev(B̄, B, 1, true)
         @test chol_unblocked_rev(B̄, B, true) ≈ chol_blocked_rev(B̄, B, 5, true)
