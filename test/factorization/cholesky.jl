@@ -28,7 +28,7 @@
     end
 
     let rng = MersenneTwister(123456), N = 10
-        A, Ā = Matrix.(LowerTriangular.(randn.(rng, [N, N], [N, N])))
+        A, Ā = Matrix.(LowerTriangular.(randn.(Ref(rng), [N, N], [N, N])))
         B, B̄ = copy.(transpose.([A, Ā]))
         @test chol_unblocked_rev(Ā, A, false) ≈ chol_blocked_rev(Ā, A, 1, false)
         @test chol_unblocked_rev(Ā, A, false) ≈ chol_blocked_rev(Ā, A, 3, false)

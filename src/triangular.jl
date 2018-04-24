@@ -2,7 +2,7 @@ import LinearAlgebra: det, logdet, LowerTriangular, UpperTriangular
 export det, logdet, LowerTriangular, UpperTriangular
 
 for (ctor, ctor_sym, T, T_sym) in zip([:LowerTriangular, :UpperTriangular],
-                               [:(:(Base.LowerTriangular)), :(:(Base.UpperTriangular))],
+                               [:(:(LinearAlgebra.LowerTriangular)), :(:(LinearAlgebra.UpperTriangular))],
                                [:(LowerTriangular{<:Real}), :(UpperTriangular{<:Real})],
                                [:(:(LowerTriangular{<:Real})), :(:(UpperTriangular{<:Real}))])
 
@@ -12,7 +12,7 @@ for (ctor, ctor_sym, T, T_sym) in zip([:LowerTriangular, :UpperTriangular],
     ∇(::Type{$ctor}, ::Arg1, p, Y::$T, Ȳ::$T, X::AM) = Matrix(Ȳ)
     ∇(X̄::AM, ::Type{$ctor}, ::Arg1, p, Y::$T, Ȳ::$T, X::AM) = broadcast!(+, X̄, X̄, Ȳ)
 
-    push!(ops, DiffOp(:(Base.det), Expr(:curly, :Tuple, $T_sym), [true]))
+    push!(ops, DiffOp(:(LinearAlgebra.det), Expr(:curly, :Tuple, $T_sym), [true]))
     ∇(::typeof(det), ::Arg1, p, y::Real, ȳ::Real, X::$T) =
         Diagonal(ȳ .* y ./ view(X, diagind(X)))
 
@@ -30,7 +30,7 @@ for (ctor, ctor_sym, T, T_sym) in zip([:LowerTriangular, :UpperTriangular],
         return X̄
     end
 
-    push!(ops, DiffOp(:(Base.logdet), Expr(:curly, :Tuple, $T_sym), [true]))
+    push!(ops, DiffOp(:(LinearAlgebra.logdet), Expr(:curly, :Tuple, $T_sym), [true]))
     ∇(::typeof(logdet), ::Arg1, p, y::Real, ȳ::Real, X::$T) =
         Diagonal(ȳ ./ view(X, diagind(X)))
 

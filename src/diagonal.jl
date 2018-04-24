@@ -1,7 +1,7 @@
 import LinearAlgebra: det, logdet, diagm, Diagonal, diag
 export diag, diagm, Diagonal
 
-push!(ops, DiffOp(:(Base.diag), :(Tuple{DLA.AM}), [true]))
+push!(ops, DiffOp(:(LinearAlgebra.diag), :(Tuple{DLA.AM}), [true]))
 function ∇(::typeof(diag), ::Arg1, p, y::AV, ȳ::AV, X::AM)
     X̄ = fill!(similar(X), zero(eltype(X)))
     X̄[diagind(X̄)] = ȳ
@@ -13,7 +13,7 @@ function ∇(X̄::AM, ::typeof(diag), ::Arg1, p, y::AV, ȳ::AV, X::AM)
     return X̄
 end
 
-push!(ops, DiffOp(:(Base.diag), :(Tuple{DLA.AM, Integer}), [true, false]))
+push!(ops, DiffOp(:(LinearAlgebra.diag), :(Tuple{DLA.AM, Integer}), [true, false]))
 function ∇(::typeof(diag), ::Arg1, p, y::AV, ȳ::AV, X::AM, k::Integer)
     X̄ = fill!(similar(X), zero(eltype(X)))
     X̄[diagind(X̄, k)] = ȳ
@@ -25,19 +25,19 @@ function ∇(X̄::AM, ::typeof(diag), ::Arg1, p, y::AV, ȳ::AV, X::AM, k::Integ
     return X̄
 end
 
-push!(ops, DiffOp(:(Base.diagm), :(Tuple{Pair{<:Integer, <:AV}}), [true]))
+push!(ops, DiffOp(:(LinearAlgebra.diagm), :(Tuple{Pair{<:Integer, <:AV}}), [true]))
 ∇(::typeof(diagm), ::Arg1, p, Y::AM, Ȳ::AM, x::Pair{<:Integer, <:AV}) =
     copyto!(similar(x.second), view(Ȳ, diagind(Ȳ, x.first)))
 ∇(x̄::AV, ::typeof(diagm), ::Arg1, p, Y::AM, Ȳ::AM, x::Pair{<:Integer, <:AV}) =
     broadcast!(+, x̄, x̄, view(Ȳ, diagind(Ȳ, x.first)))
 
-push!(ops, DiffOp(:(Base.Diagonal), :(Tuple{DLA.AV}), [true]))
+push!(ops, DiffOp(:(LinearAlgebra.Diagonal), :(Tuple{DLA.AV}), [true]))
 ∇(::Type{Diagonal}, ::Arg1, p, Y::Diagonal{<:Real}, Ȳ::Diagonal{<:Real}, x::AV) =
     copyto!(similar(x), Ȳ.diag)
 ∇(x̄::AV, ::Type{Diagonal}, ::Arg1, p, Y::Diagonal{<:Real}, Ȳ::Diagonal{<:Real}, x::AV) =
     broadcast!(+, x̄, x̄, Ȳ.diag)
 
-push!(ops, DiffOp(:(Base.Diagonal), :(Tuple{DLA.AM}), [true]))
+push!(ops, DiffOp(:(LinearAlgebra.Diagonal), :(Tuple{DLA.AM}), [true]))
 function ∇(::Type{Diagonal}, ::Arg1, p, Y::Diagonal{<:Real}, Ȳ::Diagonal{<:Real}, X::AM)
     X̄ = zero(X)
     copyto!(view(X̄, diagind(X)), Ȳ.diag)
@@ -49,7 +49,7 @@ function ∇(X̄::AM, ::Type{Diagonal}, ::Arg1, p, Y::Diagonal{<:Real}, Ȳ::Dia
     return X̄
 end
 
-push!(ops, DiffOp(:(Base.det), :(Tuple{Diagonal{<:Real}}), [true]))
+push!(ops, DiffOp(:(LinearAlgebra.det), :(Tuple{Diagonal{<:Real}}), [true]))
 ∇(::typeof(det), ::Arg1, p, y::Real, ȳ::Real, X::Diagonal{<:Real}) =
     Diagonal(ȳ .* y ./ X.diag)
 function ∇(X̄::Diagonal{<:Real}, ::typeof(det), ::Arg1, p, y::Real, ȳ::Real, X::Diagonal{<:Real})
@@ -57,7 +57,7 @@ function ∇(X̄::Diagonal{<:Real}, ::typeof(det), ::Arg1, p, y::Real, ȳ::Real
     return X̄
 end
 
-push!(ops, DiffOp(:(Base.logdet), :(Tuple{Diagonal{<:Real}}), [true]))
+push!(ops, DiffOp(:(LinearAlgebra.logdet), :(Tuple{Diagonal{<:Real}}), [true]))
 ∇(::typeof(logdet), ::Arg1, p, y::Real, ȳ::Real, X::Diagonal{<:Real}) = Diagonal(ȳ ./ X.diag)
 function ∇(X̄::Diagonal{<:Real}, ::typeof(logdet), ::Arg1, p, y::Real, ȳ::Real, X::Diagonal{<:Real})
     broadcast!((x̄, x, ȳ)->x̄ + ȳ / x, X̄.diag, X̄.diag, X.diag, ȳ)
